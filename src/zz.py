@@ -19,15 +19,18 @@ def solve(command, seed):
 
 
 class State:
-    main = 0.0
-    test = 0.0
+    main = 0
+    test = 0
     lock = threading.Lock()
 
     def add(self, s, a, b):
         with self.lock:
-            self.main += a
-            self.test += b
-            print('{}\t{:.6f}\t{:.6f}\t{:.6f}\t{:.6f}'.format(
+            if abs(a - b) > 0.01:
+                if a < b:
+                    self.main += 1
+                else:
+                    self.test += 1
+            print('{}\t{:8.3f}\t{:8.3f}\t{:d}\t{:d}'.format(
                 s, a, b, self.main, self.test))
 
 
@@ -40,13 +43,13 @@ def worker():
         seed = q.get()
         if seed is None:
             break
-        a = (solve(MAIN, seed) - 0.9) * 100
-        b = (solve(TEST, seed) - 0.9) * 100
+        a = solve(MAIN, seed)
+        b = solve(TEST, seed)
         scores.add(seed, a, b)
         q.task_done()
 
 
-num_worker_threads = 3
+num_worker_threads = 2
 threads = []
 for i in range(num_worker_threads):
     t = threading.Thread(target=worker)
@@ -54,8 +57,8 @@ for i in range(num_worker_threads):
     threads.append(t)
 
 
-N = 103
-for seed in range(3, N):
+N = 5000
+for seed in range(1, N):
     q.put(seed)
 
 # block until all tasks are done
