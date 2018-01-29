@@ -61,25 +61,37 @@ inline unsigned get_random() {
 
 constexpr float TIME_LIMIT = 1.9;
 constexpr int N = 1 << 8;
+constexpr int Z = 1 << 14;
+constexpr int ZP = Z * M_PI;
 
-int n, x[N];
-bool m[N][N];
-float pi;
+uint8_t n, x[N], best[N], m[N][N];
 
-auto dist(int a, int b) {
-  if (a > b) swap(a, b);
-  return sin((b - a) * pi);
+inline int sin_(int x) {
+  int sum = x, f = x;
+  x = x * x / Z;
+  f = x * f / 6 / Z;
+  sum -= f;
+  f = x * f / 20 / Z;
+  sum += f;
+  f = x * f / 42 / Z;
+  sum -= f;
+  return sum;
 }
 
-auto calc(int t) {
-  float v = 0;
-  for (int i = 0; i < n; ++i)
-    if (m[t][i]) v += dist(x[t], x[i]);
+int dist(int a, int b) {
+  int t = a > b ? a - b : b - a;
+  if (t > (n >> 1)) t = n - t;
+  return sin_(t * ZP / n);
+}
+
+int calc(int t) {
+  int v = 0;
+  for (int i = 0; m[t][i] < 0xff; ++i) v += dist(x[t], x[m[t][i]]);
   return v;
 }
 
-auto score() {
-  float v = 0;
+int score() {
+  int v = 0;
   for (int i = 0; i < n; ++i) v += calc(i);
   return v;
 }
@@ -89,37 +101,54 @@ class PointsOnTheCircle {
   vector<int> permute(vector<int> matrix) {
     {  // init
       n = (int)sqrt(matrix.size());
-      pi = M_PI / n;
+      memset(m, 0xff, sizeof(m));
       for (int i = 0; i < n; ++i) {
         x[i] = i;
-        for (int j = 0; j < n; ++j) m[i][j] = matrix[i * n + j];
+        for (int j = 0; j < n; ++j)
+          if (matrix[i * n + j])
+            for (int k = 0;; ++k)
+              if (m[i][k] == 0xff) {
+                m[i][k] = j;
+                break;
+              }
       }
     }
     {  // solve
       constexpr int LOG_SIZE = 1 << 10;
-      float log_[LOG_SIZE];
-      float p[N];
+      int log_[LOG_SIZE];
+      int p[N];
+      int bs = INT_MAX, cs = 0;
       for (int i = 0; i < n; ++i) p[i] = calc(i);
       while (true) {
         float time = TIME_LIMIT - timer.getElapsed();
         if (time < 0) break;
         for (int i = 0; i < LOG_SIZE; ++i) {
-          log_[i] = -1 * log((i + 0.5) / LOG_SIZE) * time / TIME_LIMIT;
+          log_[i] = -Z * log((i + 0.5) / LOG_SIZE) * time / TIME_LIMIT;
         }
         for (int i = 0; i < 0xffff; ++i) {
           int a = get_random() % n;
           int b = get_random() % n;
           if (a == b) continue;
           swap(x[a], x[b]);
-          float va = calc(a);
-          float vb = calc(b);
+          int va = calc(a);
+          int vb = calc(b);
           if (va + vb - p[a] - p[b] > log_[get_random() & (LOG_SIZE - 1)]) {
             swap(x[a], x[b]);
           } else {
-            for (int i = 0; i < n; ++i) {
-              if (m[i][a]) p[i] += dist(x[a], x[i]) - dist(x[b], x[i]);
-              if (m[i][b]) p[i] += dist(x[b], x[i]) - dist(x[a], x[i]);
+            cs -= p[a] + p[b];
+            cs += va + vb;
+            if (bs > cs) {
+              bs = cs;
+              memcpy(best, x, sizeof(x));
             }
+            auto diff = [&](int a, int b) {
+              for (int i = 0; m[a][i] < 0xff; ++i) {
+                int t = m[a][i];
+                p[t] += dist(x[a], x[t]) - dist(x[b], x[t]);
+              }
+            };
+            diff(a, b);
+            diff(b, a);
             p[a] = va;
             p[b] = vb;
           }
@@ -129,7 +158,7 @@ class PointsOnTheCircle {
     }
     {  // output
       vector<int> ret(n);
-      for (int i = 0; i < n; ++i) ret[x[i]] = i;
+      for (int i = 0; i < n; ++i) ret[best[i]] = i;
       return ret;
     }
   }
