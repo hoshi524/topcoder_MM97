@@ -64,7 +64,7 @@ constexpr int N = 1 << 8;
 constexpr int Z = 1 << 14;
 constexpr int ZP = Z * M_PI;
 
-uint8_t n, x[N], best[N], m[N][N];
+uint8_t n, x[N], p[N], best[N], m[N][N];
 
 inline int sin_(int x) {
   int sum = x, f = x;
@@ -104,6 +104,7 @@ class PointsOnTheCircle {
       memset(m, 0xff, sizeof(m));
       for (int i = 0; i < n; ++i) {
         x[i] = i;
+        p[i] = i;
         for (int j = 0; j < n; ++j)
           if (matrix[i * n + j])
             for (int k = 0;; ++k)
@@ -116,9 +117,10 @@ class PointsOnTheCircle {
     {  // solve
       constexpr int LOG_SIZE = 1 << 10;
       int log_[LOG_SIZE];
-      int p[N];
+      int v[N];
       int bs = INT_MAX, cs = 0;
-      for (int i = 0; i < n; ++i) p[i] = calc(i);
+      int d = n / 8 + 1;
+      for (int i = 0; i < n; ++i) v[i] = calc(i);
       while (true) {
         float time = TIME_LIMIT - timer.getElapsed();
         if (time < 0) break;
@@ -127,16 +129,17 @@ class PointsOnTheCircle {
         }
         for (int i = 0; i < 0xffff; ++i) {
           int a = get_random() % n;
-          int b = get_random() % n;
+          int pmin = x[a] - d;
+          if (pmin < 0) pmin += n;
+          int b = p[(pmin + get_random() % (d * 2 + 1)) % n];
           if (a == b) continue;
           swap(x[a], x[b]);
           int va = calc(a);
           int vb = calc(b);
-          if (va + vb - p[a] - p[b] > log_[get_random() & (LOG_SIZE - 1)]) {
+          if (va + vb - v[a] - v[b] > log_[get_random() & (LOG_SIZE - 1)]) {
             swap(x[a], x[b]);
           } else {
-            cs -= p[a] + p[b];
-            cs += va + vb;
+            cs += va + vb - v[a] - v[b];
             if (bs > cs) {
               bs = cs;
               memcpy(best, x, sizeof(x));
@@ -144,13 +147,15 @@ class PointsOnTheCircle {
             auto diff = [&](int a, int b) {
               for (int i = 0; m[a][i] < 0xff; ++i) {
                 int t = m[a][i];
-                p[t] += dist(x[a], x[t]) - dist(x[b], x[t]);
+                v[t] += dist(x[a], x[t]) - dist(x[b], x[t]);
               }
             };
             diff(a, b);
             diff(b, a);
-            p[a] = va;
-            p[b] = vb;
+            v[a] = va;
+            v[b] = vb;
+            p[x[a]] = a;
+            p[x[b]] = b;
           }
         }
         // for (int i = 0; i < n; ++i) assert(abs(p[i] - calc(i)) < 0.001);
