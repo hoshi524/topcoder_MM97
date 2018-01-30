@@ -4,9 +4,9 @@ import threading
 
 
 subprocess.call(
-    'g++-5 -std=gnu++1y -O2 -o out/main.out src/main.cpp', shell=True)
+    'g++ --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3 -o out/main.out src/main.cpp', shell=True)
 subprocess.call(
-    'g++-5 -std=gnu++1y -O2 -o out/test.out src/test.cpp', shell=True)
+    'g++ --std=c++0x -W -Wall -Wno-sign-compare -O2 -s -pipe -mmmx -msse -msse2 -msse3 -o out/test.out src/test.cpp', shell=True)
 subprocess.call('javac -d out src/PointsOnTheCircleVis.java', shell=True)
 MAIN = './out/main.out'
 TEST = './out/test.out'
