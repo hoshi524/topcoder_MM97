@@ -104,7 +104,7 @@ class PointsOnTheCircle {
       int log_[LOG_SIZE];
       int v[N];
       int bs = INT_MAX, cs = 0;
-      int dmin = n / 10;
+      int dmin = 5;
       int dmax = n / 3;
       for (int i = 0; i < n; ++i) v[i] = calc(i);
       while (true) {
@@ -116,9 +116,9 @@ class PointsOnTheCircle {
         int d = dmin + (dmax - dmin) * time;
         for (int i = 0; i < 0xffff; ++i) {
           int a = get_random() % n;
-          int pmin = x[a] - d;
-          if (pmin < 0) pmin += n;
-          int b = p[(pmin + get_random() % (d * 2 + 1)) % n];
+          int t = x[a] - d;
+          if (t < 0) t += n;
+          int b = p[(t + get_random() % (d * 2 + 1)) % n];
           if (a == b) continue;
           swap(x[a], x[b]);
           int va = calc(a);
