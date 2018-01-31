@@ -61,28 +61,12 @@ inline unsigned get_random() {
 
 constexpr float TIME_LIMIT = 1.9;
 constexpr int N = 1 << 8;
-constexpr int Z = 1 << 14;
-constexpr int ZP = Z * M_PI;
+constexpr int Z = 1 << 16;
 
 uint8_t n, x[N], p[N], best[N], m[N][N];
+int D[N];
 
-inline int sin_(int x) {
-  int sum = x, f = x;
-  x = x * x / Z;
-  f = x * f / 6 / Z;
-  sum -= f;
-  f = x * f / 20 / Z;
-  sum += f;
-  f = x * f / 42 / Z;
-  sum -= f;
-  return sum;
-}
-
-int dist(int a, int b) {
-  int t = a > b ? a - b : b - a;
-  if (t > (n >> 1)) t = n - t;
-  return sin_(t * ZP / n);
-}
+inline int dist(int a, int b) { return D[abs(a - b)]; }
 
 int calc(int t) {
   int v = 0;
@@ -105,6 +89,7 @@ class PointsOnTheCircle {
       for (int i = 0; i < n; ++i) {
         x[i] = i;
         p[i] = i;
+        D[i] = sin(M_PI * i / n) * Z;
         for (int j = 0; j < n; ++j)
           if (matrix[i * n + j])
             for (int k = 0;; ++k)
