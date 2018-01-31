@@ -123,10 +123,11 @@ class PointsOnTheCircle {
           swap(x[a], x[b]);
           int va = calc(a);
           int vb = calc(b);
-          if (va + vb - v[a] - v[b] > log_[get_random() & (LOG_SIZE - 1)]) {
+          t = va + vb - v[a] - v[b];
+          if (t > log_[get_random() & (LOG_SIZE - 1)]) {
             swap(x[a], x[b]);
           } else {
-            cs += va + vb - v[a] - v[b];
+            cs += t;
             if (bs > cs) {
               bs = cs;
               memcpy(best, x, sizeof(x));
