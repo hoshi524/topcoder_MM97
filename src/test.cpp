@@ -63,20 +63,15 @@ constexpr float TIME_LIMIT = 1.9;
 constexpr int N = 1 << 8;
 constexpr int Z = 1 << 16;
 
-uint8_t n, x[N], p[N], best[N], m[N][N];
+uint8_t n, x[N], p[N], best[N], m[N][N >> 1];
 int D[N];
 
 inline int dist(int a, int b) { return D[abs(a - b)]; }
 
-int calc(int t) {
+int calc(int a, int b) {
   int v = 0;
-  for (int i = 0; m[t][i] < 0xff; ++i) v += dist(x[t], x[m[t][i]]);
-  return v;
-}
-
-int score() {
-  int v = 0;
-  for (int i = 0; i < n; ++i) v += calc(i);
+  for (int i = 0; m[a][i] < 0xff; ++i)
+    if (m[a][i] != b) v += dist(x[b], x[m[a][i]]) - dist(x[a], x[m[a][i]]);
   return v;
 }
 
@@ -102,11 +97,9 @@ class PointsOnTheCircle {
     {  // solve
       constexpr int LOG_SIZE = 1 << 10;
       int log_[LOG_SIZE];
-      int v[N];
       int bs = INT_MAX, cs = 0;
       int dmin = 5;
       int dmax = n / 3;
-      for (int i = 0; i < n; ++i) v[i] = calc(i);
       while (true) {
         float time = TIME_LIMIT - timer.getElapsed();
         if (time < 0) break;
@@ -120,29 +113,16 @@ class PointsOnTheCircle {
           if (t < 0) t += n;
           int b = p[(t + get_random() % (d * 2 + 1)) % n];
           if (a == b) continue;
-          swap(x[a], x[b]);
-          int va = calc(a);
-          int vb = calc(b);
-          if (va + vb - v[a] - v[b] > log_[get_random() & (LOG_SIZE - 1)]) {
+          t = calc(a, b) + calc(b, a);
+          if (t <= log_[get_random() & (LOG_SIZE - 1)]) {
             swap(x[a], x[b]);
-          } else {
-            cs += va + vb - v[a] - v[b];
+            p[x[a]] = a;
+            p[x[b]] = b;
+            cs += t;
             if (bs > cs) {
               bs = cs;
               memcpy(best, x, sizeof(x));
             }
-            auto diff = [&](int a, int b) {
-              for (int i = 0; m[a][i] < 0xff; ++i) {
-                int t = m[a][i];
-                v[t] += dist(x[a], x[t]) - dist(x[b], x[t]);
-              }
-            };
-            diff(a, b);
-            diff(b, a);
-            v[a] = va;
-            v[b] = vb;
-            p[x[a]] = a;
-            p[x[b]] = b;
           }
         }
         // for (int i = 0; i < n; ++i) assert(abs(p[i] - calc(i)) < 0.001);
