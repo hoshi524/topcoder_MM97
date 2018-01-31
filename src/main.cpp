@@ -63,7 +63,7 @@ constexpr float TIME_LIMIT = 1.9;
 constexpr int N = 1 << 8;
 constexpr int Z = 1 << 16;
 
-uint8_t n, x[N], p[N], best[N], m[N][N];
+uint8_t n, x[N], p[N], best[N], m[N][N >> 1];
 int D[N];
 
 inline int dist(int a, int b) { return D[abs(a - b)]; }
@@ -104,7 +104,8 @@ class PointsOnTheCircle {
       int log_[LOG_SIZE];
       int v[N];
       int bs = INT_MAX, cs = 0;
-      int d = n / 8 + 1;
+      int dmin = 5;
+      int dmax = n / 3;
       for (int i = 0; i < n; ++i) v[i] = calc(i);
       while (true) {
         float time = TIME_LIMIT - timer.getElapsed();
@@ -112,11 +113,12 @@ class PointsOnTheCircle {
         for (int i = 0; i < LOG_SIZE; ++i) {
           log_[i] = -Z * log((i + 0.5) / LOG_SIZE) * time / TIME_LIMIT;
         }
+        int d = dmin + (dmax - dmin) * time;
         for (int i = 0; i < 0xffff; ++i) {
           int a = get_random() % n;
-          int pmin = x[a] - d;
-          if (pmin < 0) pmin += n;
-          int b = p[(pmin + get_random() % (d * 2 + 1)) % n];
+          int t = x[a] - d;
+          if (t < 0) t += n;
+          int b = p[(t + get_random() % (d * 2 + 1)) % n];
           if (a == b) continue;
           swap(x[a], x[b]);
           int va = calc(a);
